@@ -11,7 +11,7 @@ const {
 
 exports.handler = async (event, context) => {
   const headers = {
-    "Access-Control-Allow-Origin": "https://abc-music-library-cd1c3.web.app", // ✅ restrict to your domain
+    "Access-Control-Allow-Origin": "*", // ✅ restrict to your domain
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   };

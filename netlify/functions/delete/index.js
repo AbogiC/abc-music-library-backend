@@ -3,8 +3,7 @@ const fetch = require("node-fetch");
 
 exports.handler = async (event, context) => {
   const headers = {
-    "Access-Control-Allow-Origin":
-      "https://abc-music-library-cd1c3.firebaseapp.com", // ✅ restrict to your domain
+    "Access-Control-Allow-Origin": "*", // ✅ restrict to your domain
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   };
