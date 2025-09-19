@@ -101,7 +101,7 @@ exports.handler = async (event, context) => {
       const uploadBoundary =
         "boundary_" + Math.random().toString(36).substr(2, 9);
       const metadata = {
-        name: pdfFile.fileName,
+        name: pdfFile.filename,
         mimeType: pdfFile.mimeType,
         parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"],
       };
@@ -110,8 +110,8 @@ exports.handler = async (event, context) => {
       uploadBody += "Content-Type: application/json; charset=UTF-8\r\n\r\n";
       uploadBody += JSON.stringify(metadata) + "\r\n";
       uploadBody += `--${uploadBoundary}\r\n`;
-      uploadBody += `Content-Type: ${mimeType}\r\n\r\n`;
-      uploadBody += fileBuffer.toString("binary") + "\r\n";
+      uploadBody += `Content-Type: ${pdfFile.mimeType}\r\n\r\n`;
+      uploadBody += pdfFile.buffer.toString("binary") + "\r\n";
       uploadBody += `--${uploadBoundary}--\r\n`;
 
       const uploadResponse = await fetch(
@@ -127,7 +127,7 @@ exports.handler = async (event, context) => {
       );
 
       if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+        throw new Error(`PDF upload failed: ${uploadResponse.statusText}`);
       }
 
       const response = await uploadResponse.json();
@@ -137,7 +137,7 @@ exports.handler = async (event, context) => {
       const uploadBoundary =
         "boundary_" + Math.random().toString(36).substr(2, 9);
       const metadata = {
-        name: audioFile.fileName,
+        name: audioFile.filename,
         mimeType: audioFile.mimeType,
         parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"],
       };
@@ -146,8 +146,8 @@ exports.handler = async (event, context) => {
       uploadBody += "Content-Type: application/json; charset=UTF-8\r\n\r\n";
       uploadBody += JSON.stringify(metadata) + "\r\n";
       uploadBody += `--${uploadBoundary}\r\n`;
-      uploadBody += `Content-Type: ${mimeType}\r\n\r\n`;
-      uploadBody += fileBuffer.toString("binary") + "\r\n";
+      uploadBody += `Content-Type: ${audioFile.mimeType}\r\n\r\n`;
+      uploadBody += audioFile.buffer.toString("binary") + "\r\n";
       uploadBody += `--${uploadBoundary}--\r\n`;
 
       const uploadResponse = await fetch(
@@ -163,7 +163,7 @@ exports.handler = async (event, context) => {
       );
 
       if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+        throw new Error(`Audio upload failed: ${uploadResponse.statusText}`);
       }
 
       const response = await uploadResponse.json();
@@ -180,8 +180,8 @@ exports.handler = async (event, context) => {
       genre,
       difficulty_level,
       description,
-      pdf: pdfFile.filename,
-      audio: audioFile.filename,
+      pdf: pdfUrl || pdfFile?.filename,
+      audio: audioUrl || audioFile?.filename,
     };
 
     const docRef = await addDoc(collection(db, "sheet_music"), sheetMusicData);
