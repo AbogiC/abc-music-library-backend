@@ -1,4 +1,5 @@
-const { google } = require("googleapis");
+const { OAuth2Client } = require("google-auth-library");
+const fetch = require("node-fetch");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -29,17 +30,17 @@ exports.handler = async (event, context) => {
   try {
     const CLIENT_ID = process.env.CLIENT_ID;
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
-    const REDIRECT_URI = "https://developers.google.com/oauthplayground";
     const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 
-    const oauth2Client = new google.auth.OAuth2(
+    const oauth2Client = new OAuth2Client(
       CLIENT_ID,
       CLIENT_SECRET,
-      REDIRECT_URI
+      "https://developers.google.com/oauthplayground"
     );
 
     oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
-    const drive = google.drive({ version: "v3", auth: oauth2Client });
+
+    const { token: accessToken } = await oauth2Client.getAccessToken();
 
     // Decode body if base64
     let body = event.body;
@@ -77,24 +78,40 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Write to temp file
-    const tempPath = path.join(os.tmpdir(), fileName);
-    fs.writeFileSync(tempPath, fileBuffer);
+    // Create multipart body
+    const uploadBoundary =
+      "boundary_" + Math.random().toString(36).substr(2, 9);
+    const metadata = {
+      name: fileName,
+      mimeType: mimeType,
+      parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"],
+    };
 
-    const response = await drive.files.create({
-      requestBody: {
-        name: fileName,
-        mimeType: mimeType,
-        parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"],
-      },
-      media: {
-        mimeType: mimeType,
-        body: fs.createReadStream(tempPath),
-      },
-    });
+    let uploadBody = `--${uploadBoundary}\r\n`;
+    uploadBody += "Content-Type: application/json; charset=UTF-8\r\n\r\n";
+    uploadBody += JSON.stringify(metadata) + "\r\n";
+    uploadBody += `--${uploadBoundary}\r\n`;
+    uploadBody += `Content-Type: ${mimeType}\r\n\r\n`;
+    uploadBody += fileBuffer.toString("binary") + "\r\n";
+    uploadBody += `--${uploadBoundary}--\r\n`;
 
-    // Clean up
-    fs.unlinkSync(tempPath);
+    const uploadResponse = await fetch(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": `multipart/related; boundary=${uploadBoundary}`,
+        },
+        body: uploadBody,
+      }
+    );
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+    }
+
+    const response = await uploadResponse.json();
 
     return {
       statusCode: 200,
@@ -102,7 +119,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         message: "File uploaded successfully",
-        file: response.data,
+        file: response,
       }),
     };
   } catch (error) {

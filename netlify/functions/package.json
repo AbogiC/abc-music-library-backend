@@ -2,6 +2,7 @@
   "name": "netlify-functions",
   "version": "1.0.0",
   "dependencies": {
-    "googleapis": "^160.0.0"
+    "google-auth-library": "^9.0.0",
+    "node-fetch": "^2.7.0"
   }
 }

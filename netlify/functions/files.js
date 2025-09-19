@@ -1,4 +1,5 @@
-const { google } = require("googleapis");
+const { OAuth2Client } = require("google-auth-library");
+const fetch = require("node-fetch");
 
 exports.handler = async (event, context) => {
   // Set headers for CORS
@@ -27,30 +28,40 @@ exports.handler = async (event, context) => {
   try {
     const CLIENT_ID = process.env.CLIENT_ID;
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
-    const REDIRECT_URI = "https://developers.google.com/oauthplayground";
     const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 
-    const oauth2Client = new google.auth.OAuth2(
+    const oauth2Client = new OAuth2Client(
       CLIENT_ID,
       CLIENT_SECRET,
-      REDIRECT_URI
+      "https://developers.google.com/oauthplayground"
     );
 
     oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
-    const drive = google.drive({ version: "v3", auth: oauth2Client });
 
-    const response = await drive.files.list({
-      pageSize: 10,
-      fields: "nextPageToken, files(id, name)",
-      q: "'169ssbDPOs7T3RahvMB2gkaDr04KkuTyk' in parents",
-    });
+    const { token: accessToken } = await oauth2Client.getAccessToken();
+
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?pageSize=10&fields=nextPageToken,files(id,name)&q='169ssbDPOs7T3RahvMB2gkaDr04KkuTyk' in parents`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to list files: ${response.statusText}`);
+    }
+
+    const data = await response.json();
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        files: response.data.files,
+        files: data.files,
       }),
     };
   } catch (error) {

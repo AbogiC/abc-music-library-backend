@@ -1,4 +1,5 @@
-const { google } = require("googleapis");
+const { OAuth2Client } = require("google-auth-library");
+const fetch = require("node-fetch");
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -36,21 +37,31 @@ exports.handler = async (event, context) => {
 
     const CLIENT_ID = process.env.CLIENT_ID;
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
-    const REDIRECT_URI = "https://developers.google.com/oauthplayground";
     const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 
-    const oauth2Client = new google.auth.OAuth2(
+    const oauth2Client = new OAuth2Client(
       CLIENT_ID,
       CLIENT_SECRET,
-      REDIRECT_URI
+      "https://developers.google.com/oauthplayground"
     );
 
     oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
-    const drive = google.drive({ version: "v3", auth: oauth2Client });
 
-    await drive.files.delete({
-      fileId: fileId,
-    });
+    const { token: accessToken } = await oauth2Client.getAccessToken();
+
+    const deleteResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!deleteResponse.ok) {
+      throw new Error(`Failed to delete file: ${deleteResponse.statusText}`);
+    }
 
     return {
       statusCode: 200,
