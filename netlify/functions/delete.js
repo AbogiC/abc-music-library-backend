@@ -1,4 +1,6 @@
-export const handler = async (event, context) => {
+const { google } = require("googleapis");
+
+exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -22,8 +24,6 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { google } = await import("googleapis");
-
     const fileId = event.queryStringParameters.fileId; // Extract fileId from query
 
     if (!fileId) {
