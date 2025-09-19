@@ -1,3 +1,6 @@
+const { OAuth2Client } = require("google-auth-library");
+const fetch = require("node-fetch");
+
 const { initializeApp } = require("firebase/app");
 const { getFirestore, collection, addDoc } = require("firebase/firestore");
 
