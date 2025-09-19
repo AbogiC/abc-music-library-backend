@@ -1,8 +1,12 @@
-import fs from "fs";
-import path from "path";
-import os from "os";
+const { google } = require("googleapis");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
 
-export const handler = async (event, context) => {
+const { initializeApp } = require("firebase/app");
+const { getFirestore, collection, addDoc } = require("firebase/firestore");
+
+exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -26,12 +30,6 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { google } = await import("googleapis");
-    const { initializeApp } = await import("firebase/app");
-    const { getFirestore, collection, addDoc } = await import(
-      "firebase/firestore"
-    );
-
     // Firebase configuration
     const firebaseConfig = {
       apiKey: process.env.FIREBASE_API_KEY,
@@ -100,46 +98,6 @@ export const handler = async (event, context) => {
     const { title, tags, composer, genre, difficulty_level, description } =
       formData;
 
-    // Upload files to Google Drive
-    let pdfUrl = null;
-    let audioUrl = null;
-
-    if (pdfFile) {
-      const tempPath = path.join(os.tmpdir(), pdfFile.filename);
-      fs.writeFileSync(tempPath, pdfFile.buffer);
-      const response = await drive.files.create({
-        requestBody: {
-          name: pdfFile.filename,
-          mimeType: pdfFile.mimeType,
-          parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"],
-        },
-        media: {
-          mimeType: pdfFile.mimeType,
-          body: fs.createReadStream(tempPath),
-        },
-      });
-      fs.unlinkSync(tempPath);
-      pdfUrl = `https://drive.google.com/file/d/${response.data.id}/view`;
-    }
-
-    if (audioFile) {
-      const tempPath = path.join(os.tmpdir(), audioFile.filename);
-      fs.writeFileSync(tempPath, audioFile.buffer);
-      const response = await drive.files.create({
-        requestBody: {
-          name: audioFile.filename,
-          mimeType: audioFile.mimeType,
-          parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"],
-        },
-        media: {
-          mimeType: audioFile.mimeType,
-          body: fs.createReadStream(tempPath),
-        },
-      });
-      fs.unlinkSync(tempPath);
-      audioUrl = `https://drive.google.com/file/d/${response.data.id}/view`;
-    }
-
     const sheetMusicData = {
       title,
       tags,
@@ -147,8 +105,8 @@ export const handler = async (event, context) => {
       genre,
       difficulty_level,
       description,
-      pdf: pdfUrl,
-      audio: audioUrl,
+      pdf: pdfFile.filename,
+      audio: audioFile.filename,
     };
 
     const docRef = await addDoc(collection(db, "sheet_music"), sheetMusicData);
