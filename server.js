@@ -8,7 +8,15 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
-import { collection, addDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  query,
+  getDoc,
+  getDocs,
+  where,
+  orderBy,
+} from "firebase/firestore";
 import { db } from "./firebase.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -172,6 +180,30 @@ app.post(
     });
   }
 );
+
+app.get("/api/sheet-music", async (req, res) => {
+  try {
+    const scoreQuery = query(
+      collection(db, "sheet_music"),
+      where("is_visible", "==", true),
+      orderBy("updated_at", "desc")
+    );
+    const querySnapshot = await getDocs(scoreQuery);
+
+    res.json({
+      success: true,
+      message: "Fetched successfully",
+      data: querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+    });
+  } catch (error) {
+    console.error("Error fetching sheet music:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching sheet music",
+      error: error.message,
+    });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
