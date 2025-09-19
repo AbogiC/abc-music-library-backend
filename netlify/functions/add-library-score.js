@@ -95,8 +95,8 @@ exports.handler = async (event, context) => {
     const audioFile = files.fileAudio;
 
     // Upload files to Google Drive
-    let pdfUrl = null;
-    let audioUrl = null;
+    let pdfIdDrive = null;
+    let audioIdDrive = null;
     if (pdfFile) {
       const uploadBoundary =
         "boundary_" + Math.random().toString(36).substr(2, 9);
@@ -131,7 +131,7 @@ exports.handler = async (event, context) => {
       }
 
       const response = await uploadResponse.json();
-      pdfUrl = `https://drive.google.com/file/d/${response.id}/view`;
+      pdfIdDrive = `${response.id}`;
     }
     if (audioFile) {
       const uploadBoundary =
@@ -167,7 +167,7 @@ exports.handler = async (event, context) => {
       }
 
       const response = await uploadResponse.json();
-      audioUrl = `https://drive.google.com/file/d/${response.id}/view`;
+      audioIdDrive = `${response.id}`;
     }
 
     const { title, tags, composer, genre, difficulty_level, description } =
@@ -180,8 +180,8 @@ exports.handler = async (event, context) => {
       genre,
       difficulty_level,
       description,
-      pdf: pdfUrl || pdfFile?.filename,
-      audio: audioUrl || audioFile?.filename,
+      pdf: pdfIdDrive || pdfFile?.filename,
+      audio: audioIdDrive || audioFile?.filename,
     };
 
     const docRef = await addDoc(collection(db, "sheet_music"), sheetMusicData);
