@@ -8,7 +8,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, doc } from "firebase/firestore";
 import { db } from "./firebase.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -140,6 +140,38 @@ app.delete("/api/files/:fileId", async (req, res) => {
     });
   }
 });
+
+app.post(
+  "/api/sheet-music/upload",
+  upload.fields([
+    { name: "filePDF", maxCount: 1 },
+    { name: "fileAudio", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    const pdfFile = req.files?.filePDF?.[0];
+    const audioFile = req.files?.fileAudio?.[0];
+    const { title, tags, composer, genre, difficulty_level, description } =
+      req.body;
+
+    const sheetMusicData = {
+      title,
+      tags,
+      composer,
+      genre,
+      difficulty_level,
+      description,
+      pdf: pdfFile?.originalname,
+      audio: audioFile?.originalname,
+    };
+
+    const docRef = await addDoc(collection(db, "sheet_music"), sheetMusicData);
+    res.json({
+      success: true,
+      message: "Uploaded successfully",
+      data: docRef.id,
+    });
+  }
+);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
