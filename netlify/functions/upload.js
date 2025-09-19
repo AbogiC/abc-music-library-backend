@@ -1,9 +1,7 @@
+// netlify/functions/upload-to-drive.js
 const { google } = require("googleapis");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -11,11 +9,7 @@ exports.handler = async (event, context) => {
   };
 
   if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers,
-      body: "",
-    };
+    return { statusCode: 200, headers, body: "" };
   }
 
   if (event.httpMethod !== "POST") {
@@ -37,64 +31,34 @@ exports.handler = async (event, context) => {
       CLIENT_SECRET,
       REDIRECT_URI
     );
-
     oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+
     const drive = google.drive({ version: "v3", auth: oauth2Client });
 
-    // Decode body if base64
-    let body = event.body;
-    if (event.isBase64Encoded) {
-      body = Buffer.from(body, "base64").toString("binary");
-    }
+    // Expect JSON body with { fileName, mimeType, base64 }
+    const { fileName, mimeType, base64 } = JSON.parse(event.body);
 
-    // Parse multipart form data
-    const boundary = event.headers["content-type"].split("boundary=")[1];
-    const parts = body.split(`--${boundary}`);
-    let fileBuffer = null;
-    let fileName = "";
-    let mimeType = "";
-
-    for (const part of parts) {
-      if (part.includes("Content-Disposition")) {
-        const contentDisposition = part.split("\r\n")[1];
-        if (contentDisposition.includes("filename=")) {
-          fileName = contentDisposition.split("filename=")[1].replace(/"/g, "");
-          mimeType = part.split("Content-Type: ")[1].split("\r\n")[0];
-          const content = part.split("\r\n\r\n")[1].split("\r\n--")[0];
-          fileBuffer = Buffer.from(content, "binary");
-        }
-      }
-    }
-
-    if (!fileBuffer) {
+    if (!fileName || !base64) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({
-          success: false,
-          message: "No file uploaded",
-        }),
+        body: JSON.stringify({ success: false, message: "Missing file data" }),
       };
     }
 
-    // Write to temp file
-    const tempPath = path.join(os.tmpdir(), fileName);
-    fs.writeFileSync(tempPath, fileBuffer);
+    const buffer = Buffer.from(base64, "base64");
 
     const response = await drive.files.create({
       requestBody: {
         name: fileName,
-        mimeType: mimeType,
-        parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"],
+        mimeType,
+        parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"], // change to your folder ID
       },
       media: {
-        mimeType: mimeType,
-        body: fs.createReadStream(tempPath),
+        mimeType,
+        body: buffer,
       },
     });
-
-    // Clean up
-    fs.unlinkSync(tempPath);
 
     return {
       statusCode: 200,
@@ -106,7 +70,7 @@ exports.handler = async (event, context) => {
       }),
     };
   } catch (error) {
-    console.error("Error uploading file:", error.message);
+    console.error("Error uploading file:", error);
     return {
       statusCode: 500,
       headers,
