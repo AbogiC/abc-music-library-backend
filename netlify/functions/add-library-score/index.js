@@ -2,12 +2,16 @@ const { OAuth2Client } = require("google-auth-library");
 const fetch = require("node-fetch");
 
 const { initializeApp } = require("firebase/app");
-const { getFirestore, collection, addDoc } = require("firebase/firestore");
+const {
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp,
+} = require("firebase/firestore");
 
 exports.handler = async (event, context) => {
   const headers = {
-    "Access-Control-Allow-Origin":
-      "https://abc-music-library-cd1c3.firebaseapp.com", // ✅ restrict to your domain
+    "Access-Control-Allow-Origin": "https://abc-music-library-cd1c3.web.app", // ✅ restrict to your domain
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   };
@@ -183,6 +187,9 @@ exports.handler = async (event, context) => {
       description,
       pdf: pdfIdDrive || pdfFile?.filename,
       audio: audioIdDrive || audioFile?.filename,
+      created_at: serverTimestamp(),
+      updated_at: serverTimestamp(),
+      is_visible: true,
     };
 
     const docRef = await addDoc(collection(db, "sheet_music"), sheetMusicData);

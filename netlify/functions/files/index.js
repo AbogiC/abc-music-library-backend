@@ -2,10 +2,12 @@ const { OAuth2Client } = require("google-auth-library");
 const fetch = require("node-fetch");
 
 exports.handler = async (event, context) => {
+  // Set headers for CORS
   const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Origin":
+      "https://abc-music-library-cd1c3.firebaseapp.com", // ✅ restrict to your domain
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   };
 
   if (event.httpMethod === "OPTIONS") {
@@ -16,7 +18,7 @@ exports.handler = async (event, context) => {
     };
   }
 
-  if (event.httpMethod !== "DELETE") {
+  if (event.httpMethod !== "GET") {
     return {
       statusCode: 405,
       headers,
@@ -25,16 +27,6 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const fileId = event.queryStringParameters.fileId; // Extract fileId from query
-
-    if (!fileId) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: "fileId is required" }),
-      };
-    }
-
     const CLIENT_ID = process.env.CLIENT_ID;
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
     const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
@@ -49,36 +41,38 @@ exports.handler = async (event, context) => {
 
     const { token: accessToken } = await oauth2Client.getAccessToken();
 
-    const deleteResponse = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}`,
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?pageSize=10&fields=nextPageToken,files(id,name)&q='169ssbDPOs7T3RahvMB2gkaDr04KkuTyk' in parents`,
       {
-        method: "DELETE",
+        method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       }
     );
 
-    if (!deleteResponse.ok) {
-      throw new Error(`Failed to delete file: ${deleteResponse.statusText}`);
+    if (!response.ok) {
+      throw new Error(`Failed to list files: ${response.statusText}`);
     }
+
+    const data = await response.json();
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        message: "File deleted successfully",
+        files: data.files,
       }),
     };
   } catch (error) {
-    console.error("Error deleting file:", error.message);
+    console.error("Error listing files:", error.message);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         success: false,
-        message: "Error deleting file",
+        message: "Error listing files",
         error: error.message,
       }),
     };
