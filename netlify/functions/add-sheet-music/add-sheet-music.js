@@ -1,25 +1,8 @@
-const { google } = require("googleapis");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
-const { initializeApp } = require("firebase/app");
-const { getFirestore, collection, addDoc } = require("firebase/firestore");
+import fs from "fs";
+import path from "path";
+import os from "os";
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCvUMSnmjWuHHwMgam_2oMlm6Xy7ZnsuO0",
-  authDomain: "abc-music-library-cd1c3.firebaseapp.com",
-  projectId: "abc-music-library-cd1c3",
-  storageBucket: "abc-music-library-cd1c3.firebasestorage.app",
-  messagingSenderId: "431888700003",
-  appId: "1:431888700003:web:e0331d0ec8bd9d0bab5e56",
-  measurementId: "G-K94PFKCJ99",
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -43,6 +26,26 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    const { google } = await import("googleapis");
+    const { initializeApp } = await import("firebase/app");
+    const { getFirestore, collection, addDoc } = await import(
+      "firebase/firestore"
+    );
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCvUMSnmjWuHHwMgam_2oMlm6Xy7ZnsuO0",
+      authDomain: "abc-music-library-cd1c3.firebaseapp.com",
+      projectId: "abc-music-library-cd1c3",
+      storageBucket: "abc-music-library-cd1c3.firebasestorage.app",
+      messagingSenderId: "431888700003",
+      appId: "1:431888700003:web:e0331d0ec8bd9d0bab5e56",
+      measurementId: "G-K94PFKCJ99",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
     const CLIENT_ID = process.env.CLIENT_ID;
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
     const REDIRECT_URI = "https://developers.google.com/oauthplayground";

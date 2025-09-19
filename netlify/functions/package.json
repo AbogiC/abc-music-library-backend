@@ -2,7 +2,6 @@
   "name": "netlify-functions",
   "version": "1.0.0",
   "dependencies": {
-    "googleapis": "^160.0.0",
-    "firebase": "^12.3.0"
+    "googleapis": "^160.0.0"
   }
 }

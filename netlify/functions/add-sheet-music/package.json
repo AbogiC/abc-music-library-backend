@@ -1,0 +1,8 @@
+{
+  "name": "add-sheet-music-function",
+  "version": "1.0.0",
+  "dependencies": {
+    "googleapis": "^160.0.0",
+    "firebase": "^12.3.0"
+  }
+}

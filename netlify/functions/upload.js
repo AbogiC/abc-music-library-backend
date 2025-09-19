@@ -1,9 +1,8 @@
-const { google } = require("googleapis");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
+import fs from "fs";
+import path from "path";
+import os from "os";
 
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -27,6 +26,8 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    const { google } = await import("googleapis");
+
     const CLIENT_ID = process.env.CLIENT_ID;
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
     const REDIRECT_URI = "https://developers.google.com/oauthplayground";
