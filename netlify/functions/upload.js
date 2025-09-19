@@ -1,8 +1,5 @@
 const { OAuth2Client } = require("google-auth-library");
 const fetch = require("node-fetch");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
 
 exports.handler = async (event, context) => {
   const headers = {

@@ -25,6 +25,20 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    const CLIENT_ID = process.env.CLIENT_ID;
+    const CLIENT_SECRET = process.env.CLIENT_SECRET;
+    const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+
+    const oauth2Client = new OAuth2Client(
+      CLIENT_ID,
+      CLIENT_SECRET,
+      "https://developers.google.com/oauthplayground"
+    );
+
+    oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+
+    const { token: accessToken } = await oauth2Client.getAccessToken();
+
     // Firebase configuration
     const firebaseConfig = {
       apiKey: process.env.FIREBASE_API_KEY,
@@ -76,6 +90,83 @@ exports.handler = async (event, context) => {
 
     const pdfFile = files.filePDF;
     const audioFile = files.fileAudio;
+
+    // Upload files to Google Drive
+    let pdfUrl = null;
+    let audioUrl = null;
+    if (pdfFile) {
+      const uploadBoundary =
+        "boundary_" + Math.random().toString(36).substr(2, 9);
+      const metadata = {
+        name: pdfFile.fileName,
+        mimeType: pdfFile.mimeType,
+        parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"],
+      };
+
+      let uploadBody = `--${uploadBoundary}\r\n`;
+      uploadBody += "Content-Type: application/json; charset=UTF-8\r\n\r\n";
+      uploadBody += JSON.stringify(metadata) + "\r\n";
+      uploadBody += `--${uploadBoundary}\r\n`;
+      uploadBody += `Content-Type: ${mimeType}\r\n\r\n`;
+      uploadBody += fileBuffer.toString("binary") + "\r\n";
+      uploadBody += `--${uploadBoundary}--\r\n`;
+
+      const uploadResponse = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": `multipart/related; boundary=${uploadBoundary}`,
+          },
+          body: uploadBody,
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
+
+      const response = await uploadResponse.json();
+      pdfUrl = `https://drive.google.com/file/d/${response.id}/view`;
+    }
+    if (audioFile) {
+      const uploadBoundary =
+        "boundary_" + Math.random().toString(36).substr(2, 9);
+      const metadata = {
+        name: audioFile.fileName,
+        mimeType: audioFile.mimeType,
+        parents: ["169ssbDPOs7T3RahvMB2gkaDr04KkuTyk"],
+      };
+
+      let uploadBody = `--${uploadBoundary}\r\n`;
+      uploadBody += "Content-Type: application/json; charset=UTF-8\r\n\r\n";
+      uploadBody += JSON.stringify(metadata) + "\r\n";
+      uploadBody += `--${uploadBoundary}\r\n`;
+      uploadBody += `Content-Type: ${mimeType}\r\n\r\n`;
+      uploadBody += fileBuffer.toString("binary") + "\r\n";
+      uploadBody += `--${uploadBoundary}--\r\n`;
+
+      const uploadResponse = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": `multipart/related; boundary=${uploadBoundary}`,
+          },
+          body: uploadBody,
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
+
+      const response = await uploadResponse.json();
+      audioUrl = `https://drive.google.com/file/d/${response.id}/view`;
+    }
+
     const { title, tags, composer, genre, difficulty_level, description } =
       formData;
 
